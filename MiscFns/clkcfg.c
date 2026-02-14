@@ -20,7 +20,7 @@
 #define PLL_P  4
 #define PLL_Q  9
 */
-//trying 160 mhz values
+//trying 160 mhz values , APB1 40mhz with 4 prescaler, APB2 80mhz with 2 prescaler
 #define PLL_M  4
 #define PLL_N  160
 #define PLL_P  2
@@ -33,6 +33,9 @@
 	10: PLLP = 6
 	11: PLLP = 8
  * */
+
+static void tim2Callback();
+
 void clk100MhzCfg(){
 	/*enable HSE oscillator */
 	RCC->CR |= RCC_CR_HSEON;
@@ -69,3 +72,48 @@ void clk100MhzCfg(){
 	while((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL ){}
 
 }
+
+#define TIM2EN   (1u << 0)
+#define CR1_CEN  (1u << 0)
+#define DIER_UIE (1u << 0)
+
+//APB1 periph clock is 40mhz (timer clock is 80mhz)
+void tim2Interrupt1HzInit(){
+	/*enable clock access to timer 2*/
+	RCC->APB1ENR |= TIM2EN;
+	/*Set prescale value */
+	TIM2->PSC =   8000-1;     //at 80MHz 80 000 000 / 8000 = 10000
+	/*set auto-reload value*/
+	//TIM2->ARR =10000-1 ; /// 10000/10000 = 1 << so clock become 1 hz
+	TIM2->ARR =10-1 ; /// 10000/10 = 1000 << so clock become 1 Khz
+	/*clean counter*/
+	TIM2->CNT = 0;
+	/*Enable timer */
+	TIM2->CR1 = CR1_CEN;
+	/*Enable timer interrupt*/
+	//DIER, dma and interrupt enable register
+	TIM2->DIER |= DIER_UIE;
+	/*Enable timer interrupt in NVIC*/
+	NVIC_EnableIRQ(TIM2_IRQn);
+
+}
+
+
+
+static void tim2Callback(){
+	printf("A second just passed !! \n\r");
+	/*Check if FIFO not full*/
+//	if(fifoFullFlag == 1){ //fifo not full
+//		fifoFullFlag = rxFifoPut(adcRead());
+//	}else{/*RX FIFO full*/
+//		processFlag = 1;
+//	}
+
+}
+void TIM2_IRQHandler(){
+	/*clear update interrupt flag*/
+	TIM2->SR &= ~TIM2SR_UIF;
+	/*do something..*/
+	tim2Callback();
+}
+

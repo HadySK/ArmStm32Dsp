@@ -13,6 +13,7 @@ void firFilterInit(fir_filter * fir, float32_t *fltrKernel, uint32_t kernelLen){
 	fir->kernelLen = kernelLen;
 
 	/*Dynamically allocate buffer and initialize to zero*/
+	/*returns void pointer to the allocated memory area so we type cast it to the buffer type(float32_t)*/
 	/*malloc allocates a single block of uninitialized memory,
 	 * returning a pointer with garbage values,
 	 * while calloc allocates multiple blocks for an array

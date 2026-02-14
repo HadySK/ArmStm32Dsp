@@ -52,8 +52,17 @@ volatile uint32_t filteredSensorVal;
 
 extern float LP_1HZ_2HZ_IMPULSE_RESPONSE[IMP_RSP_LENGTH];
 fir_filter lpfFir;
-volatile uint32_t myRxData[50];
 
+rx_dataType sensorDataBuffer[RXFIFO_SIZE];
+uint8_t fifoFullFlag, processFlag;
+
+#define INPUT_SIG_LEN RXFIFO_SIZE
+uint32_t  outputSigArrFifo[INPUT_SIG_LEN+ IMP_RSP_LENGTH -1];
+volatile float32_t  outputArrMvgFifo[INPUT_SIG_LEN];
+
+static void clearDataBuffer();
+
+static uint8_t readFifo(rx_dataType * dataBuff);
 void convTesting();
 int main(void)
 {
@@ -62,12 +71,14 @@ int main(void)
 	/*Setclock tree*/
 	clk100MhzCfg();
 	/*init uart*/
-	uart2_Tx_Init();
+	uart2TxInit();
 
 	/*Initialize SysTick Counter*/
 	systickCounterInit();
 	//init adc
 	pa1AdcInit();
+	//enable timer2 interrupt
+	tim2Interrupt1HzInit();
 	//start conversion
 	startAdcConversion();
 
@@ -93,11 +104,8 @@ int main(void)
 
 	movingAverage( inputSignal_f32_1kHz_15kHz,  outputArrMvg,
 			KHZ_15_SIG_LEN, MAFLTR_PTS);
-	//serialPlotReXCMSIS(outputArrDFTCMSIS2, (HZ_10_100_500HZ_SIGLEN/2));
 
-	//serialPlotSignal((float32_t  *) outputSigArr,
-			//	(uint32_t)  (HZ_10_100_500HZ_SIGLEN+ LPF_70HZ_IMP_RESP_LEN -1));
-    /* Loop forever */
+
  	while(1){
  		/*serialPlotDFTIDFT((float32_t  *)inputSignal_f32_1kHz_15kHz,(uint32_t)   KHZ_15_SIG_LEN,
  			(float32_t  *)outputArrMvg,(uint32_t)   KHZ_15_SIG_LEN);*/
@@ -107,18 +115,84 @@ int main(void)
  		filteredSensorVal = firFilterUpdate(&lpfFir, sensorValue);
  		printf("%d,", (int)sensorValue);
  		printf("%d\n\r", (int)filteredSensorVal);*/
- 		for (int i = 0; i< 50; i++){
- 				rxFifoPut(adcRead());
- 			}
- 		for (int i = 0; i< 50; i++){
- 			rxFifoGet(&rxData);
- 			myRxData[i] = rxData;
- 		}
- 		delayFn(100000);
+// 		for (int i = 0; i< 50; i++){
+// 				rxFifoPut(adcRead());
+// 			}
+// 		for (int i = 0; i< 50; i++){
+// 			rxFifoGet(&rxData);
+//
+// 		}
+//
+// 		if(processFlag){
+// 			clearDataBuffer();
+// 			/*Read FIFO into data buffer*/
+// 			for(int i = 0; i<RXFIFO_SIZE ; i++){
+// 				/*wait until entire batch is collected from ADC
+// 				 * entire batch is FIFO SIZE*/
+// 				while(fifoFullFlag == 1){}
+//
+// 				/*Read data into data buff*/
+// 				fifoFullFlag = readFifo(sensorDataBuffer +i);
+// 			}
+// 			/*perform digital signal processing*/
+//
+// 			 arm_conv_f32((float32_t  *)sensorDataBuffer,
+// 									(uint32_t)   INPUT_SIG_LEN,
+// 									(float32_t  *)LP_1HZ_2HZ_IMPULSE_RESPONSE,
+// 									(uint32_t)  IMP_RSP_LENGTH,
+// 									(float32_t  *)outputSigArrFifo);
+//
+// 			movingAverage( sensorDataBuffer,  outputArrMvgFifo,
+// 					INPUT_SIG_LEN, MAFLTR_PTS);
+//
+// 			for(int i = 0; i<(INPUT_SIG_LEN+ IMP_RSP_LENGTH -1) ; i++){
+// 				if(i<INPUT_SIG_LEN){
+//
+// 		 		printf("%d,", (int)(OFFSET2 +sensorDataBuffer[i]));
+// 				}
+// 		 		printf("%d\n\r", (int)outputSigArrFifo[i]);
+// 			}
+// 			/*
+//
+// 			for(int i = 0; i<(INPUT_SIG_LEN) ; i++){
+//
+// 		 		printf("%d,", (int)(OFFSET2 +sensorDataBuffer[i]));
+//
+// 		 		printf("%d\n\r", (int)outputArrMvgFifo[i]);
+// 			}
+//
+// 			*/
+//
+// 			/*reset process flag to exit loop*/
+// 		 	processFlag = 0;
+// 		}
+// 		delayFn(100000);
 
  	}
 
 }
+static uint8_t readFifo(rx_dataType * dataBuff){
+	volatile uint8_t rdFlag;
+	/*place FIFO data into data buffer*/
+	rdFlag = rxFifoGet(dataBuff);
+	/*if FIFO is empty then reset FIFO full flag*/
+	if(rdFlag ==0){
+		/*this will start the fifo put routine again to
+		 * collect the next batch of samples*/
+		fifoFullFlag = 1;
+	}else{
+		//keep fifo full flag at fifo Full (0)
+		fifoFullFlag = 0;
+	}
+	return fifoFullFlag;
+}
+
+static void clearDataBuffer(){
+	for(int i = 0; i < RXFIFO_SIZE; i++){
+		sensorDataBuffer[i] = 0;
+	}
+}
+
 void convTesting(){
 
 	float32_t  reX[ECG_SIG_LEN/2];
@@ -229,3 +303,5 @@ void convTesting(){
 	 		//arm_cmplx_mag_f32(reX2, imX2, HZ_10_100_500HZ_SIGLEN/2);
 	 		serialPlotReX((float32_t  *)reX2,(uint32_t) (HZ_10_100_500HZ_SIGLEN/2));*/
 }
+
+

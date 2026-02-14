@@ -20,7 +20,7 @@
 #define UART_BAUDRATE 115200
 static void computeUartBd(uint32_t periphClk, uint32_t baudRate);
 
-void uart2_Tx_Init(){
+void uart2TxInit(){
 
 	/*config uart gpio pin*/
 	//enable clock access gpioa

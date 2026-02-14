@@ -6,7 +6,7 @@
 #include "stm32f4xx.h"
 
 
-void uart2_Tx_Init();
+void uart2TxInit();
 void uart2_write(int ch);
 void uart2_read();
 
