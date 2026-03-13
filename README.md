@@ -4,7 +4,7 @@ Testing DSP algorithms on Arm Cortex-M4 (STM32 NUCLEO-F446RE), FPU, CMSIS DSP
 
 STM32 Nucleo-64 development board with STM32F446RE MCU has an Arm Cortex-M4 core with DSP (ADC and DAC) and FPU, and up to 180 MHz CPU.
 
-![alt text](docs/nucleo.jpg)  
+![alt text](docs/nucleo2.jpg)  
 
 For development we used STM32CubeIDE, it is decent for basic debugging and tinkering with the registers. 
 
@@ -25,7 +25,7 @@ arm_conv_f32 CMSIS API is used for convolution with FIR filters designed in Matl
 CMSIS library also provides APIs for Fourier Transform like arm_rfft_fast_f32. 
 By using the FPU and CMSIS, DSP algorithms can run at least x2 faster and sometimes up to x10 faster compared to running the code using the CPU regular instructions.
 
-below FIR Filters and Moving average filters using CMSIS
+Below FIR Filter applied to ADC signal and Moving average filter using CMSIS
 
 ![alt text](docs/FIR_Filter.png)  
 ![alt text](docs/mvgFilter.png)  
